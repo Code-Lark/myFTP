@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="./layui/css/layui.css">
+    <script src="./layui/layui.js"></script>
+    <script src="./vue.js"></script>
+    <script src="./jquery-3.7.0.min.js"></script>
+    <link rel="stylesheet" href="./index.css">
+</head>
+<body>
+<div id="root">
+
+    <div class="header">
+
+        <div class="layui-form-item">
+            <div class="layui-input-group" >
+                <div class="layui-input-split layui-input-prefix" style="cursor: pointer;" @click="goBack">
+                    <i class="layui-icon layui-icon-left"></i>
+                </div>
+                <input type="text"  class="layui-input" style="width: 580px" :value="filePath" disabled>
+                <div class="layui-input-split layui-input-suffix" style="cursor: pointer;">
+                    <i class="layui-icon layui-icon-refresh-3"></i>
+                </div>
+                <div style="width: 20px"></div>
+                <div class="layui-input-group " >
+                    <input type="text" placeholder="筛选" class="layui-input" v-model="searchWord">
+                    <div class="layui-input-split layui-input-suffix" style="cursor: pointer;">
+                        <i class="layui-icon layui-icon-search"></i>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <table class="layui-table" id="file-table">
+        <thead>
+        <tr>
+            <th>文件名</th>
+            <th>文件类型</th>
+            <th>大小</th>
+            <th>下载</th>
+        </tr>
+        <tr v-for="(item,index) in searchList" :key="index">
+            <td><a :href="item.link">{{item.name}}</a></td>
+            <td>{{item.type}}</td>
+            <td>{{item.size}}</td>
+            <td><a :href="item.link" download v-if="item.type!=='文件夹'">下载</a></td>
+        </tr>
+        </thead>
+    </table>
+</div>
+
+<script>
+    function getUrlKey(name,url){
+        return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(url) || [, ""])[1].replace(/\+/g, '%20')) || null
+
+    }
+
+    const vm=new Vue({
+        el:'#root',
+        data: {
+            tableList:[],
+            filePath:'./resource',
+            searchWord:'',
+        },
+        methods:{
+            getFileList(){
+                fetch('/myFTP/fileList.php?filePath='+this.filePath).then(res=>res.text()).then(res=>{
+                    console.log(res);
+                    this.tableList=JSON.parse(res);
+                })
+            },
+            goBack(){
+                let arr=this.filePath.split('/');
+                console.log(arr)
+                if (arr.length>2){
+                    this.filePath=this.filePath.substring(0, this.filePath.lastIndexOf ('/'));
+                    window.location.href="/myFTP/index.html?dir="+this.filePath;
+                }else {
+                    layer.msg("已经没有退路了")
+                }
+            }
+
+        },
+        created(){
+            let path=getUrlKey("dir",window.location.href)
+            if (path!==null){
+                this.filePath=path
+            }
+            this.getFileList()
+            // this.searchWord=this.tableList;
+        },
+        computed:{
+            searchList(){
+                return this.tableList.filter(item=>{
+                    return item.name.indexOf(this.searchWord) !== -1
+                })
+            }
+        }
+    })
+
+
+
+</script>
+</body>
+</html>
